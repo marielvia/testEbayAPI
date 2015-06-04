@@ -2,10 +2,10 @@
 
 //Base class for Strategy Pattern
 abstract class EbayFilter {
-	//filter index
+	//searc filter index
 	public static $filterNumber = 0;
     
-    //method used to create the ebay filter
+    //method used to create the ebay filter 
     abstract public function createFilter();
 
 }
