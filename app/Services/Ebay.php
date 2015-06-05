@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\EbayFilter\Contracts\EbayFilterContext;
 use App\EbayFilter\Contracts\KeywordEbayFilter;
 use App\EbayFilter\Contracts\MaxPriceEbayFilter;
 use App\EbayFilter\Contracts\MinPriceEbayFilter;
@@ -19,33 +20,34 @@ class Ebay {
 		$url .= '&outputSelector=SellerInfo';		
 		$url .= '&response-data-format=' . config('ebay.format');
 
+		$ebayContext = new EbayFilterContext;
+
 		//get filter with keyword
-		$keyword = new KeywordEbayFilter($filterUrl);
-		$url  .= $keyword->createFilter();
+		$url  .= $ebayContext->createFilter(new KeywordEbayFilter($filterUrl));
 
 		//get filter with min price
-		$minPrice = new MinPriceEbayFilter($filterUrl);
-		$url .= $minPrice->createFilter();
+		$url  .= $ebayContext->createFilter(new MinPriceEbayFilter($filterUrl));
 
 		//get filter with max price
-		$maxPrice = new MaxPriceEbayFilter($filterUrl);
-		$url .= $maxPrice->createFilter();
+		$url  .= $ebayContext->createFilter(new MaxPriceEbayFilter($filterUrl));
 
 		//get filter with sorting
-		$sorting = new SortingEbayFilter($filterUrl);
-		$url .= $sorting->createFilter();
+		$url  .= $ebayContext->createFilter(new SortingEbayFilter($filterUrl));
 
 		$results = json_decode(file_get_contents($url),true);
 		$count = 0;
 		$data = [];
+		$errorMessage = "";
 
 		if($results !== false && $results['findItemsAdvancedResponse'][0]['ack'][0] === 'Success') {
 			$count = $results['findItemsAdvancedResponse'][0]['searchResult'][0]['@count'];
 			if ($count>0) 
 				$data = self::resultParser($results);
+		}else{
+			$errorMessage = isset($results['findItemsAdvancedResponse'][0]['errorMessage'][0]['error'][0]['message'])?$results['findItemsAdvancedResponse'][0]['errorMessage'][0]['error'][0]['message'][0]:"Unknown Error";
 		}
 
-		$listItems = array("result"=>$count,"items"=>$data);
+		$listItems = array("result"=>$count,"items"=>$data,"error_message"=>$errorMessage);
 		
 		return $listItems;
 	}
